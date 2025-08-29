@@ -11,6 +11,7 @@ import { OpenAIService } from './services/openaiService.js';
 import { MCPProxyService } from './services/mcpProxyService.js';
 import { ToolRegistryService } from './services/toolRegistryService.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { generalLimiter, aiLimiter, mcpLimiter } from './middleware/rateLimit.js';
 import { logger } from './utils/logger.js';
 
 // Load environment variables
@@ -42,7 +43,21 @@ app.use(helmet({
   },
 }));
 
+// Apply global limiter (all routes)
+app.use(generalLimiter);
+
+// Apply stricter limiter for AI routes (only AI routes)
+app.use('/api/ai', aiLimiter);
+
+// Apply stricter limiter for MCP routes (only MCP routes)
+app.use('/api/mcp', mcpLimiter);
+
+// Disable X-Powered-By header
 app.disable('x-powered-by');
+
+// Trust proxy for X-Forwarded-For header (for rate limiting) and CORS 
+// Trust proxy so rate-limit sees real client IP
+app.set('trust proxy', 1);
 
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
