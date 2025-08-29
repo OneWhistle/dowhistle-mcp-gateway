@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  mcp-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dowhistle-mcp-gateway
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MCP_SERVER_URL: ${MCP_SERVER_URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+    # Optional: If you have a separate MCP server, you can link it here
+    # depends_on:
+    #   - mcp-server
+
+  # Example MCP Server (uncomment and configure if you have one)
+  # mcp-server:
+  #   image: <your-mcp-server-image>
+  #   container_name: dowhistle-mcp-server
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     # Add MCP server specific environment variables here
+  #     SOME_MCP_VAR: value
