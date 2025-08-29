@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  mcp-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dowhistle-mcp-gateway-dev
+    image: dowhistle-mcp-gateway:dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MCP_SERVER_URL: ${MCP_SERVER_URL}
+      ALLOWED_ORIGINS: "*"
+    ports:
+      - "3001:3001"

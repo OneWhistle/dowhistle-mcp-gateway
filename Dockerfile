@@ -1,25 +1,40 @@
 # Stage 1: Build the application
-FROM node:18-alpine as builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install dependencies (including dev)
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm ci --ignore-scripts
 
+# Copy source code and build
 COPY . .
 RUN npm run build
 
-# Stage 2: Create the production image
-FROM node:18-alpine
+# Stage 2: Production runtime
+FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
+# Create a non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Expose the port the app runs on
+# Copy only package files and install prod dependencies
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts \
+    && npm cache clean --force
+
+# Copy compiled app from builder
+COPY --from=builder /app/dist ./dist
+
+# Change ownership to non-root user
+RUN chown -R appuser:appgroup /app
+USER appuser
+
 EXPOSE 3001
 
-# Command to run the application
+# Add a healthcheck (customize endpoint if needed)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3001/health || exit 1
+
 CMD ["node", "dist/app.js"]

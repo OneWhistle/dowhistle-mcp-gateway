@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: dowhistle-mcp-gateway
+    image: dowhistle-mcp-gateway:prod
+    restart: always   # ensures container restarts on crash/reboot
     ports:
       - "3001:3001"
     environment:
@@ -14,16 +16,12 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       MCP_SERVER_URL: ${MCP_SERVER_URL}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-    # Optional: If you have a separate MCP server, you can link it here
-    # depends_on:
-    #   - mcp-server
 
-  # Example MCP Server (uncomment and configure if you have one)
-  # mcp-server:
-  #   image: <your-mcp-server-image>
-  #   container_name: dowhistle-mcp-server
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     # Add MCP server specific environment variables here
-  #     SOME_MCP_VAR: value
+    # Healthcheck: app must respond on /health
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s       # check every 30s
+      timeout: 10s        # fail if no response in 10s
+      retries: 3          # mark unhealthy after 3 failures
+      start_period: 15s   # give app 15s to boot before healthchecks
+
