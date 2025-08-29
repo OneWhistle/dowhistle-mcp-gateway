@@ -8,3 +8,4 @@ yarn-error.log
 src/**/*.map
 
 .github/workflows/docker-publish.yml
+01-notes
