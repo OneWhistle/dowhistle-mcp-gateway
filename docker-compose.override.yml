@@ -8,11 +8,10 @@ services:
     volumes:
       - .:/app
       - /app/node_modules   # ensures container has its own node_modules, not overwritten
+    ports:
+      - "${PORT:-3001}:3001"
+    env_file:
+      - .env
     environment:
       NODE_ENV: development
-      PORT: 3001
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      MCP_SERVER_URL: ${MCP_SERVER_URL}
       ALLOWED_ORIGINS: "*"
-    ports:
-      - "3001:3001"
