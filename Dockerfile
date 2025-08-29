@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies (including dev)
+# Install dependencies (including dev for build)
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
@@ -19,21 +19,21 @@ WORKDIR /app
 # Create a non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Copy only package files and install prod dependencies
+# Copy only package files and install production dependencies
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts \
-    && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
-# Copy compiled app from builder
+# Copy compiled app and installed modules
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
 
-# Change ownership to non-root user
+# Change ownership
 RUN chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 3001
 
-# Add a healthcheck (customize endpoint if needed)
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:3001/health || exit 1
 

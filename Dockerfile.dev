@@ -1,0 +1,17 @@
+# Development Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies, including dev dependencies
+COPY package.json package-lock.json ./
+RUN npm install
+
+# Copy all source code
+COPY . .
+
+# Expose the port the app runs on
+EXPOSE 3001
+
+# Command to run the application in development mode with hot-reloading (hot reload via tsx)
+CMD ["npm", "run", "dev"]

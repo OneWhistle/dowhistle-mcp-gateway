@@ -1,16 +1,13 @@
-version: '3.8'
-
 services:
   mcp-gateway:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: dowhistle-mcp-gateway-dev
     image: dowhistle-mcp-gateway:dev
     volumes:
       - .:/app
-      - /app/node_modules
-    command: npm run dev
+      - /app/node_modules   # ensures container has its own node_modules, not overwritten
     environment:
       NODE_ENV: development
       PORT: 3001

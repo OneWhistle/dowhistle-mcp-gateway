@@ -92,17 +92,39 @@ src/
 
 ## 🚀 Usage
 
-### Development Mode
-```bash
-npm run dev
-```
-This starts the server with hot reload using `tsx watch`.
+### Local Development with Docker Compose
 
-### Production Build
-```bash
-npm run build
-npm start
-```
+For local development with hot-reloading:
+
+1. **Ensure your `.env` file is configured** (e.g., `OPENAI_API_KEY`, `MCP_SERVER_URL`, `ALLOWED_ORIGINS`).
+
+2. **Start the development service** (this will use `Dockerfile.dev`)
+   ```bash
+   docker-compose -f docker-compose.yml -f docker-compose.override.yml up --build
+   ```
+   This command will build the `dev` image and start the `mcp-gateway-dev` container with hot-reloading.
+
+3. **Stop the development service**
+   ```bash
+   docker-compose -f docker-compose.yml -f docker-compose.override.yml down
+   ```
+
+### Production Build and Run with Docker Compose
+
+For production deployment:
+
+1. **Ensure your `.env` file is configured with the necessary environment variables** (e.g., `OPENAI_API_KEY`, `MCP_SERVER_URL`, `ALLOWED_ORIGINS`).
+
+2. **Start the production service**
+   ```bash
+   docker-compose up --build -d
+   ```
+   This will build the `prod` image and start the `mcp-gateway` service in detached mode.
+
+3. **Stop the service**
+   ```bash
+   docker-compose down
+   ```
 
 ### Other Commands
 ```bash
