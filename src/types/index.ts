@@ -22,6 +22,7 @@ export interface ChatContext {
   serviceHistory?: any[];
   currentBooking?: any;
   preferences?: Record<string, any>;
+  accessToken?: string; // Add accessToken to ChatContext
 }
 
 export interface AIResponse {
