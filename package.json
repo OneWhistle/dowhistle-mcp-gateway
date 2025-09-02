@@ -1,7 +1,7 @@
 {
-  "name": "dowhistle-mcp-backend",
+  "name": "dowhistle-mcp-gateway",
   "version": "1.0.0",
-  "description": "DoWhistle MCP Backend API Server",
+  "description": "DoWhistle MCP Gateway Server",
   "main": "dist/app.js",
   "type": "module",
   "scripts": {
