@@ -91,7 +91,13 @@ export class MCPProxyService {
 
   setAuth(accessToken?: string, userId?: string) {
     const headers: Record<string, string> = {};
-    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+    if (accessToken) {
+      // If token doesn't start with Bearer, add it
+      const authValue = accessToken.toLowerCase().startsWith('bearer ')
+        ? accessToken
+        : `Bearer ${accessToken}`;
+      headers['Authorization'] = authValue;
+    }
     if (userId) headers['X-User-Id'] = userId;
     this.authHeaders = headers;
     logger.debug('Auth headers updated', {
@@ -154,10 +160,12 @@ export class MCPProxyService {
       let droppedKeys: string[] = [];
       if (tool?.inputSchema?.properties) {
         const allowed = Object.keys(tool.inputSchema.properties);
+        // Only include access_token if it's actually defined in the tool's schema
+        const accessTokenAllowed = allowed.includes('access_token');
         safeParams = Object.fromEntries(
-          Object.entries(params).filter(([k]) => allowed.includes(k))
+          Object.entries(params).filter(([k]) => allowed.includes(k) || (k === 'access_token' && accessTokenAllowed))
         );
-        droppedKeys = Object.keys(params).filter((k) => !allowed.includes(k));
+        droppedKeys = Object.keys(params).filter((k) => !allowed.includes(k) && !(k === 'access_token' && accessTokenAllowed));
       }
 
       logger.info('Executing MCP service', {
