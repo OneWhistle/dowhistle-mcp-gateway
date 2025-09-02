@@ -67,16 +67,25 @@ Tone & boundaries
 
   async processMessage(message: string, context: ChatContext = {}): Promise<AIResponse> {
     try {
-      logger.info('Processing message with OpenAI', { 
-        messageLength: message.length, 
-        hasContext: !!Object.keys(context).length 
+      logger.info('Processing message with OpenAI', {
+        messageLength: message.length,
+        hasContext: !!Object.keys(context).length
       });
 
       const toolsContext = this.availableTools.length
-        ? `\n\nAvailable MCP Tools (name + input schema):\n${JSON.stringify(this.availableTools.map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })), null, 2)}\n\nIMPORTANT: When the user's request matches a tool, respond ONLY with a single JSON object like {"tool":"search_businesses","args":{"latitude":10.99,"longitude":76.96,"keyword":"burger"}}. Do NOT include any text or explanations. If no tool applies, respond normally in text.`
+        ? `\n\n## Available MCP Tools\n\nYou have access to the following DoWhistle tools. Analyze the user's request and determine if any tool should be called:\n\n${this.availableTools.map(t => {
+            const inputSchema = t.inputSchema?.properties || {};
+            const requiredParams = t.inputSchema?.required || [];
+            const paramsDesc = Object.entries(inputSchema).map(([key, value]: [string, any]) => {
+              const required = requiredParams.includes(key) ? ' (required)' : ' (optional)';
+              return `  - ${key}: ${value.description || 'No description'}${required}`;
+            }).join('\n');
+
+            return `### ${t.name}\n**Description:** ${t.description}\n**Parameters:**\n${paramsDesc}\n**Example usage:** ${t.name}(${Object.keys(inputSchema).join(', ')})`;
+          }).join('\n\n')}\n\n## Tool Calling Instructions\n\nWhen you detect that the user wants to use a tool:\n1. Respond ONLY with a JSON object in this exact format: {"tool":"tool_name","args":{"param1":"value1"}}\n2. Include ALL required parameters for the tool\n3. For protected tools (create_whistle, list_whistles, toggle_visibility, get_user_profile), always include access_token parameter\n4. Do NOT include any explanatory text, just the JSON\n5. If no tool applies, respond with normal conversational text\n\n## Authentication Note\nProtected tools require authentication. The access_token parameter will be automatically populated with the user's authentication token if available.`
         : '';
 
-      const systemPrompt = `${this.getDoWhistleKnowledge()}\n\nCurrent context: ${JSON.stringify(context)}${toolsContext}`;
+      const systemPrompt = `${this.getDoWhistleKnowledge()}\n\n## Current User Context\n${JSON.stringify(context, null, 2)}${toolsContext}`;
 
       const completion = await this.openai.chat.completions.create({
         model: this.config.model!,
@@ -85,10 +94,10 @@ Tone & boundaries
           { role: 'user', content: message }
         ],
         temperature: this.config.temperature,
-        max_tokens: 300
+        max_tokens: 1024  // Increased to allow for tool call JSON
       });
 
-      const responseText = completion.choices[0]?.message?.content || 
+      const responseText = completion.choices[0]?.message?.content ||
         "I'm here to help with DoWhistle — rides, local services, and nearby offers. What do you need?";
 
       logger.info('OpenAI response received', { responseLength: responseText.length });
@@ -102,7 +111,7 @@ Tone & boundaries
     }
   }
 
-  private parseAIResponse(responseText: string, originalMessage: string, _context: ChatContext): AIResponse {
+    private parseAIResponse(responseText: string, originalMessage: string, _context: ChatContext): AIResponse {
     const actions: Array<{ type: string; data: any }> = [];
     const suggestions: string[] = [];
 
@@ -112,12 +121,12 @@ Tone & boundaries
     const jsonCandidates: string[] = [];
     const fenced = responseText.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
     if (fenced && fenced[1]) jsonCandidates.push(fenced[1].trim());
-    
+
     // Also consider the whole string if it looks like JSON
     if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
       jsonCandidates.push(responseText.trim());
     }
-    
+
     for (const candidate of jsonCandidates) {
       try {
         const parsed = JSON.parse(candidate);
@@ -126,7 +135,7 @@ Tone & boundaries
           actions.push({ type: 'mcp_tool', data: parsed });
           return { text: '', actions };
         }
-      } catch (e) { 
+      } catch (e) {
         logger.debug('Failed to parse JSON candidate', { candidate });
       }
     }
