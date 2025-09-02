@@ -10,6 +10,8 @@ RUN npm install
 # Copy all source code
 COPY . .
 
+RUN mkdir -p logs && chmod -R 777 logs
+
 # Expose the port the app runs on
 EXPOSE 3001
 
